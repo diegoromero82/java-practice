@@ -4,18 +4,19 @@ import java.time.LocalDate;
 
 public class Pelicula {
     //Atributos
-    public String titulo;
-    public String descripcion;
-    public int duracion;
-    public String genero;
-    public LocalDate fechaEstreno;
-    public double calificacion;
-    public boolean disponible;
+    private String titulo;
+    private String descripcion;
+    private int duracion;
+    private Genero genero;
+    private LocalDate fechaEstreno;
+    private double calificacion;
+    private boolean disponible;
 
-    public Pelicula(String titulo, int duracion, String genero) {
+    public Pelicula(String titulo, int duracion, Genero genero, double calificacion) {
         this.titulo = titulo;
         this.duracion = duracion;
         this.genero = genero;
+        this.calificacion = calificacion;
     }
 
     //Metodos
@@ -24,7 +25,8 @@ public class Pelicula {
     }
 
     public String obtenerFichaTecnica() {
-        return titulo + " (" + fechaEstreno.getYear() + ")\n" +
+        return "Titulo: " + titulo + "\n" +
+                "Duración: " + duracion + "\n" +
                 "Género: " + genero + "\n" +
                 "Calificación: " + calificacion + "/5";
     }
@@ -39,4 +41,47 @@ public class Pelicula {
         return calificacion >= 4;
     }
 
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public int getDuracion() {
+        return duracion;
+    }
+
+    public Genero getGenero() {
+        return genero;
+    }
+
+    public LocalDate getFechaEstreno() {
+        return fechaEstreno;
+    }
+
+    public double getCalificacion() {
+        return calificacion;
+    }
+
+    public boolean isDisponible() {
+        return disponible;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public void setDuracion(int duracion) {
+        this.duracion = duracion;
+    }
+
+    public void setFechaEstreno(LocalDate fechaEstreno) {
+        this.fechaEstreno = fechaEstreno;
+    }
+
+    public void setDisponible(boolean disponible) {
+        this.disponible = disponible;
+    }
 }
