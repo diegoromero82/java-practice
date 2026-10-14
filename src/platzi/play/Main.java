@@ -1,8 +1,9 @@
 package platzi.play;
 
-import platzi.play.contenido.Genero;
-import platzi.play.contenido.Pelicula;
+import platzi.play.contenido.*;
+import platzi.play.excepcion.ContenidoExistenteException;
 import platzi.play.plataforma.Plataforma;
+import platzi.play.util.FileUtils;
 import platzi.play.util.ScannerUtils;
 
 import java.util.List;
@@ -15,6 +16,8 @@ public class Main {
     public static final int BUSCAR_POR_TITULO = 3;
     public static final int BUSCAR_POR_GENERO = 4;
     public static final int VER_POPULARES = 5;
+    public static final int REPRODUCIR = 6;
+    public static final int BUSCAR_TIPO = 7;
     public static final int ELIMINAR = 8;
     public static final int SALIR = 9;
 
@@ -22,8 +25,9 @@ public class Main {
         Plataforma plataforma = new Plataforma(NOMBRE_PLATAFORMA);
         System.out.println(NOMBRE_PLATAFORMA + " v" + VERSION);
 
-        cargarPeliculas(plataforma);
+        cargarContenido(plataforma);
         System.out.println("Más de " + plataforma.getDuracionTotal() + " minutos de contenido! \n");
+        plataforma.getContenidoPromocional().forEach(promocionable -> System.out.println(promocionable.promocionar()));
 
         while (true) {
             int opcionElegida = ScannerUtils.capturarNumero("""
@@ -33,37 +37,50 @@ public class Main {
                     3. Buscar por titulo
                     4. Buscar por genero
                     5. Ver Populares
+                    6. Reproducir
+                    7. Buscar por Tipo de contenido
                     8. Eliminar
                     9. Salir
                     ->""");
 
             switch (opcionElegida) {
                 case AGREGAR -> {
+                    int tipoContenido = ScannerUtils.capturarNumero("Seleccione el tipo de contenido que desea agregar:\n 1. Pelicula\n 2. Documental ");
                     String nombrePelicula = ScannerUtils.capturarTexto("Nombre del contenido");
                     Genero genero = ScannerUtils.capturarGenero("Genero del contenido");
                     int duracion = ScannerUtils.capturarNumero("Duración del contenido");
                     double calificacion = ScannerUtils.capturDecimal("Calificación del contenido");
 
-                    plataforma.agregar(new Pelicula(nombrePelicula, duracion, genero, calificacion));
+                    try {
+                        if (tipoContenido == 1) {
+                            plataforma.agregar(new Pelicula(nombrePelicula, duracion, genero, calificacion));
+                        } else {
+                            String narrador = ScannerUtils.capturarTexto("Narrador del documental");
+                            plataforma.agregar(new Documental(nombrePelicula, duracion, genero, calificacion, narrador));
+                        }
+
+                    } catch (ContenidoExistenteException e) {
+                        System.out.println(e.getMessage());
+                    }
                 }
                 case MOSTRAR -> {
-                    List<String> titulos = plataforma.getTitulo();
-                    titulos.forEach(System.out::println);
+                    List<ResumenContenido> contenidosResumidos = plataforma.getResumenes();
+                    contenidosResumidos.forEach(r -> System.out.println(r.toDisplayMoviesSummary()));
                 }
                 case BUSCAR_POR_TITULO -> {
-                    String nombreBuscado = ScannerUtils.capturarTexto("Escriba el nombre de la Pelicula");
-                    Pelicula pelicula = plataforma.buscarPorTitulo(nombreBuscado);
+                    String nombreBuscado = ScannerUtils.capturarTexto("Escriba el nombre de la Contenido");
+                    Contenido contenido = plataforma.buscarPorTitulo(nombreBuscado);
 
-                    if (pelicula != null){
-                        System.out.println(pelicula.obtenerFichaTecnica());
+                    if (contenido != null){
+                        System.out.println(contenido.obtenerFichaTecnica());
                     } else {
-                        System.out.println("La pelicula llamada " + nombreBuscado + " no existe en la plataforma " + plataforma.getNombre());
+                        System.out.println("La contenido llamada " + nombreBuscado + " no existe en la plataforma " + plataforma.getNombre());
                     }
 
                 }
                 case BUSCAR_POR_GENERO -> {
                     Genero genero = ScannerUtils.capturarGenero("Genero del contenido a buscar");
-                    List<Pelicula> contenidoPorGenero = plataforma.buscarPorGenero(genero);
+                    List<Contenido> contenidoPorGenero = plataforma.buscarPorGenero(genero);
 
                     if (contenidoPorGenero != null){
                         System.out.println(contenidoPorGenero.size() + " coincidencias para el genero " + genero + "\n");
@@ -75,12 +92,34 @@ public class Main {
                 }
                 case VER_POPULARES -> {
                     int cantidad = ScannerUtils.capturarNumero("Cantidad de resultados a mostrar");
-                    List<Pelicula> contenidoPopulares = plataforma.getPopulares(cantidad);
+                    List<Contenido> contenidoPopulares = plataforma.getPopulares(cantidad);
                     contenidoPopulares.forEach(contenido -> System.out.println(contenido.obtenerFichaTecnica() + "\n"));
                 }
+                case REPRODUCIR -> {
+                    String nombre = ScannerUtils.capturarTexto("Nombre de la pelicula a reproducir");
+                    Contenido contenido = plataforma.buscarPorTitulo(nombre);
+
+                    if (contenido != null){
+                        plataforma.reproducir(contenido);
+                    } else {
+                        System.out.println(nombre + " no existe dentro de " + plataforma.getNombre());
+                    }
+                }
+
+                case BUSCAR_TIPO -> {
+                    int tipoContenido = ScannerUtils.capturarNumero("Seleccione el tipo de contenido que desea buscar:\n 1. Pelicula\n 2. Documental ");
+                    if (tipoContenido == 1) {
+                        List<Pelicula> peliculas = plataforma.getPeliculas();
+                        peliculas.forEach(pelicula -> System.out.println(pelicula.obtenerFichaTecnica() + "\n"));
+                    } else {
+                        List<Documental> documentales = plataforma.getDocumentales();
+                        documentales.forEach(documental -> System.out.println(documental.obtenerFichaTecnica() + "\n"));
+                    }
+                }
+
                 case ELIMINAR -> {
-                    String nombreEliminar = ScannerUtils.capturarTexto("Escriba el nombre de la Pelicula a eliminar");
-                    Pelicula contenido = plataforma.buscarPorTitulo(nombreEliminar);
+                    String nombreEliminar = ScannerUtils.capturarTexto("Escriba el nombre de la Contenido a eliminar");
+                    Contenido contenido = plataforma.buscarPorTitulo(nombreEliminar);
 
                     if (contenido != null){
                         plataforma.eliminar(contenido);
@@ -99,7 +138,7 @@ public class Main {
 
 //
 //
-//        Pelicula pelicula1 = new Pelicula("Thor", 180, "Acción", 4);
+//        Contenido pelicula1 = new Contenido("Thor", 180, "Acción", 4);
 //
 //        plataforma.agregar(pelicula);
 //        plataforma.agregar(pelicula1);
@@ -124,13 +163,8 @@ public class Main {
 
 
     }
-    private static void cargarPeliculas (Plataforma plataforma) {
-        plataforma.agregar(new Pelicula("Hulk", 210, Genero.ACCION, 5));
-        plataforma.agregar(new Pelicula("Sign", 235, Genero.ACCION, 4 ));
-        plataforma.agregar(new Pelicula("Saw", 190, Genero.TERROR, 4.7 ));
-        plataforma.agregar(new Pelicula("Spider Man", 215, Genero.ACCION, 4.9 ));
-        plataforma.agregar(new Pelicula("Ant Man", 195, Genero.ACCION, 4.9 ));
-        plataforma.agregar(new Pelicula("Toy Story", 225, Genero.COMEDIA, 5 ));
+    private static void cargarContenido (Plataforma plataforma) {
+        plataforma.getContenido().addAll(FileUtils.leerContenido());
     }
 
 }
